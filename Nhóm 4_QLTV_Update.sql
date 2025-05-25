@@ -70,7 +70,7 @@ GO
 INSERT INTO dbo.DOCGIA (MADG, HOTEN, NGAYSINH, DIACHI, NGHENGHIEP) VALUES
 (1, N'Nguyễn Văn Anh', '1990-05-01', N'Hà Nội', N'Giảng viên'),
 (2, N'Nguyễn Thị Bình', '1992-07-15', N'Đà Nẵng', N'Kỹ sư'),
-(3, N'Nguyễn Minh Cường', '1985-03-22', N'Ho Chi Minh', N'Bác sĩ'),
+(3, N'Nguyễn Minh Cường', '1985-03-22', N'Hồ Chí Minh', N'Bác sĩ'),
 (4, N'Hoàng Minh Đức', '1980-10-10', N'Bắc Ninh', N'Giám đốc'),
 (5, N'Lê Thanh Thản', '1995-04-05', N'Vũng Tàu', N'Marketing'),
 (6, N'Phạm Văn Phúc', '1988-12-12', N'Cần Thơ', N'Tiếp thị'),
@@ -317,44 +317,16 @@ WHERE MONTH(NGAYMUON) = 11 AND YEAR(NGAYMUON)
 
 
 --Câu hỏi bổ sung của thầy: Xóa độc giả đã mượn cuốn sách 'Kỹ năng sống'
--- Xóa chi tiết phiếu mượn của sách "Kỹ năng sống"
-DELETE CT
-FROM dbo.CT_PHIEUMUON CT
-JOIN dbo.PHIEUMUON PM ON CT.SOPM = PM.SOPM
-JOIN dbo.SACH S ON CT.MASH = S.MASH
-WHERE S.TENSACH = N'Kỹ năng sống';
+-- Xóa ràng buộc cũ nếu có
+ALTER TABLE PHIEUMUON DROP CONSTRAINT FK_DOCGIA;
 
--- Xóa phiếu mượn liên quan đến sách "Kỹ năng sống"
-DELETE PM
-FROM dbo.PHIEUMUON PM
-WHERE EXISTS (
-    SELECT 1 
-    FROM dbo.CT_PHIEUMUON CT
-    JOIN dbo.SACH S ON CT.MASH = S.MASH
-    WHERE CT.SOPM = PM.SOPM AND S.TENSACH = N'Kỹ năng sống'
-);
+-- Tạo lại với ON DELETE CASCADE
+ALTER TABLE PHIEUMUON
+ADD CONSTRAINT FK_DOCGIA
+FOREIGN KEY (MADG) REFERENCES DOCGIA(MADG)
+ON DELETE CASCADE;
 
--- Cuối cùng xóa độc giả
-DELETE FROM dbo.DOCGIA
-WHERE MADG IN (
-    SELECT PM.MADG
-    FROM dbo.PHIEUMUON PM
-    JOIN dbo.CT_PHIEUMUON CT ON PM.SOPM = CT.SOPM
-    JOIN dbo.SACH S ON CT.MASH = S.MASH
-    WHERE S.TENSACH = N'Kỹ năng sống'
-);
- 
---SELECT NHÌN TỔNG QUAN 
-SELECT 
-    DG.HOTEN AS [Họ tên độc giả],
-    S.TENSACH AS [Tên sách],
-    PM.NGAYMUON AS [Ngày mượn],
-    CT.NGAYTRA AS [Ngày trả],
-    CT.GHICHU AS [Ghi chú]
-FROM dbo.DOCGIA DG
-JOIN dbo.PHIEUMUON PM ON DG.MADG = PM.MADG
-JOIN dbo.CT_PHIEUMUON CT ON PM.SOPM = CT.SOPM
-JOIN dbo.SACH S ON CT.MASH = S.MASH
-ORDER BY DG.HOTEN;
+DELETE FROM SACH
+WHERE TENSACH = N'Kỹ năng sống';
 
 
